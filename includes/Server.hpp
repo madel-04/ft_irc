@@ -4,20 +4,31 @@
 #include <string>
 #include <vector>
 #include <map>
+#include "Client.hpp"
+#include <stdlib.h>
 
 class Server
 {
 private:
-    std::string password;
-    int port; // std::vector<int> ports; // support for multiple ports
-    int server_fd;
+    int _listen_fd;
+    std::string _password;
+    std::vector<int> _ports;
+    std::vector<struct pollfd> _pfds;
+    std::map<int, Client> _clients;  // <fd, Client>
 
 public:
-    Server();
+    Server(int port, const std::string &password);
     ~Server();
-    Server(const Server& other);
-    Server& operator=(const Server& other);
-    
+
+    void run();
+
+private:
+    void setupListener(int port);
+    void acceptNewConnection();
+    void handleClientRead(int index);
+    void closeClient(int index);
+
+    void handleCommand(Client &client, const std::string &line);
 };
 
 #endif

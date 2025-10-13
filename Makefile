@@ -3,7 +3,7 @@ CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 INCLUDES = -Iincludes
 
-SRC_FOLDER = srcs
+SRC_FOLDER = src
 
 SRCS = $(wildcard $(SRC_FOLDER)/*.cpp)
 
