@@ -250,6 +250,110 @@ void Server::handleCommand(Client &client, const std::string &line)
         close(client.getFd());
         return;
     }
+    else if (command == "JOIN")
+    {
+        std::string channelName;
+        iss >> channelName;
+
+        if (channelName.empty() || channelName[0] != '#')
+        {
+            send(client.getFd(), "403 :Invalid channel name\r\n", 28, 0);
+            return;
+        }
+
+        // Crear canal si no existe
+        if (_channels.find(channelName) == _channels.end())
+        {
+            _channels.insert(std::make_pair(channelName, Channel(channelName)));
+            std::cout << "Created new channel: " << channelName << "\n";
+        }
+
+        Channel &channel = _channels[channelName];
+        if (!channel.hasMember(client.getFd()))
+        {
+            channel.addMember(client.getFd());
+            std::string joinMsg = ":" + client.getNick() + " JOIN " + channelName + "\r\n";
+            channel.broadcast(joinMsg, client.getFd());
+            std::string info = ":server 332 " + client.getNick() + " " + channelName + " :Welcome to " + channelName + "\r\n";
+            send(client.getFd(), info.c_str(), info.size(), 0);
+            std::cout << client.getNick() << " joined " << channelName << "\n";
+        }
+    }
+    else if (command == "PRIVMSG")
+    {
+        // Read target (channel or nick)
+        std::string target;
+        iss >> target;
+        if (target.empty())
+        {
+            send(client.getFd(), "411 :No recipient given (PRIVMSG)\r\n", strlen("411 :No recipient given (PRIVMSG)\r\n"), 0);
+            return;
+        }
+
+        // The rest of the stream is the message; it may start with a space and then a ':'
+        std::string message;
+        std::getline(iss, message);
+        // trim leading spaces
+        size_t start = message.find_first_not_of(' ');
+        if (start != std::string::npos)
+            message = message.substr(start);
+        else
+            message.clear();
+
+        if (message.empty() || message[0] != ':')
+        {
+            send(client.getFd(), "412 :No text to send\r\n", strlen("412 :No text to send\r\n"), 0);
+            return;
+        }
+
+        // remove leading ':'
+        message = message.substr(1);
+
+        // Build the full IRC formatted message
+        std::string fullMsg = ":" + client.getNick() + " PRIVMSG " + target + " :" + message + "\r\n";
+
+        if (target[0] == '#')
+        {
+            // Message to a channel
+            std::map<std::string, Channel>::iterator it = _channels.find(target);
+            if (it == _channels.end())
+            {
+                std::string err = "403 " + target + " :No such channel\r\n";
+                send(client.getFd(), err.c_str(), err.size(), 0);
+                return;
+            }
+            Channel &chan = it->second;
+            if (!chan.hasMember(client.getFd()))
+            {
+                std::string err = "442 " + target + " :You're not on that channel\r\n";
+                send(client.getFd(), err.c_str(), err.size(), 0);
+                return;
+            }
+            chan.broadcast(fullMsg, client.getFd());
+        }
+        else
+        {
+            // Direct message to a user
+            bool found = false;
+            for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+            {
+                if (it->second.getNick() == target)
+                {
+                    send(it->second.getFd(), fullMsg.c_str(), fullMsg.size(), 0);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+            {
+                std::string err = "401 " + target + " :No such nick\r\n";
+                send(client.getFd(), err.c_str(), err.size(), 0);
+            }
+        }
+    }
+
+
+    //!
     else
     {
         send(client.getFd(), "421 :Unknown command\r\n", 23, 0);

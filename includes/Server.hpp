@@ -6,6 +6,7 @@
 #include <map>
 #include "Client.hpp"
 #include <stdlib.h>
+#include "Channel.hpp"
 
 class Server
 {
@@ -15,6 +16,7 @@ private:
     std::vector<int> _ports;
     std::vector<struct pollfd> _pfds;
     std::map<int, Client> _clients;  // <fd, Client>
+    std::map<std::string, Channel> _channels; // <channel_name, Channel>
 
 public:
     Server(int port, const std::string &password);
