@@ -28,12 +28,14 @@ private:
     std::vector<struct pollfd> _pfds;
     std::map<int, Client> _clients;  // <fd, Client>
     std::map<std::string, Channel> _channels; // <channel_name, Channel>
+    bool _running;
 
 public:
     Server(int port, const std::string &password);
     ~Server();
 
     void run();
+    void stop();
 
 private:
     void setupListener(int port);

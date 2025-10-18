@@ -2,7 +2,8 @@
 
 Client::Client(int fd_)
     : fd(fd_), _authenticated(false), _hasPass(false), _hasNick(false), _hasUser(false),
-      _username(""), _nickname(""), _hostname(""), recv_buffer(""), send_buffer("") {}
+      _username(""), _nickname(""), _hostname(""), _servername(""), _realname(""),
+      recv_buffer(""), send_buffer("") {}
 
 int Client::getFd() const
 {
@@ -28,6 +29,21 @@ void Client::setUser(const std::string& user)
 {
     _username = user;
     _hasUser = true;
+}
+
+void Client::setHostname(const std::string& hostname)
+{
+    _hostname = hostname;
+}
+
+void Client::setServername(const std::string& servername)
+{
+    _servername = servername;
+}
+
+void Client::setRealname(const std::string& realname)
+{
+    _realname = realname;
 }
 
 void Client::setNick(const std::string& nick)

@@ -78,22 +78,41 @@ bool Server::authMiddleware(Client &client, const std::string &command, std::ist
 	}
 	if (command == "USER")
 	{
-		std::string username;
-		iss >> username;
+		std::string username, hostname, servername, realname;
+		iss >> username >> hostname >> servername;
+		std::getline(iss, realname);
+
+		if (!realname.empty() && realname[0] == ' ')
+			realname = realname.erase(0, 1); // remove leading space
+		if (!realname.empty() && realname[0] == ':')
+			realname = realname.erase(0, 1); // remove leading ':'
+
+		if (client.hasUser())
+		{
+			msg = ":server 462 USER :You may not reregister\r\n";
+			send(client_fd, msg.c_str(), msg.size(), 0);
+			return false;
+		}
 
 		if (client.isAuthenticated())
 		{
-			msg = "462 USER :You may not reregister\r\n";
+			msg = ":server 462 USER :You may not reregister\r\n";
 			send(client_fd, msg.c_str(), msg.size(), 0);
 			return false;
 		}
-		if (username.empty())
+
+		if (username.empty() || hostname.empty() || servername.empty() || realname.empty())
 		{
-			msg = "461 USER :Not enough parameters\r\n";
+			msg = ":server 461 USER :Not enough parameters\r\n";
 			send(client_fd, msg.c_str(), msg.size(), 0);
 			return false;
 		}
-		client.setUser(username);
+		client.setUser(username); //!
+		client.setHostname(hostname);
+		client.setServername(servername);
+		client.setRealname(realname);
+		//client.setUserSet(true); //Flag para saber que todo se ha seteado correctamente
+
 		msg = ":server NOTICE * :Username set to " + username + "\r\n";
 		send(client_fd, msg.c_str(), msg.size(), 0);
 		if (!client.isAuthenticated() && client.hasPass() && client.hasNick() && client.hasUser())

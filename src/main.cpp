@@ -7,10 +7,17 @@
 
 #include "Server.hpp"
 
-void signalHandler(int signum)
+static volatile sig_atomic_t g_shutdown = 0;
+
+extern "C" void signalHandler(int signum)
 {
-	std::cout << "Bye!\n";
-    std::exit(signum);
+	(void)signum;
+	g_shutdown = 1;
+}
+
+extern volatile sig_atomic_t* getShutdownFlag()
+{
+	return &g_shutdown;
 }
 
 int main(int argc, char* argv[]) 

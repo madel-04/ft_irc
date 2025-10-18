@@ -14,25 +14,50 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <csignal>
+
+extern volatile sig_atomic_t* getShutdownFlag();
 
 // Helper: set non-blocking
-static bool setNonBlocking(int fd)
+/*static bool setNonBlocking(int fd)
 {
 	// setea el socket como no bloqueante (mirar mejor)
     int flags = fcntl(fd, F_GETFL, 0);  //! ????
     if (flags == -1) return false;
     if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) return false;
     return true;
+}*/
+
+static bool setNonBlocking(int fd)
+{
+    if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
+        return false;
+    return true;
 }
 
-Server::Server(int port, const std::string &password) : _listen_fd(-1), _password(password)
+Server::Server(int port, const std::string &password) : _listen_fd(-1), _password(password), _running(false)
 {
     setupListener(port);
 }
 
 Server::~Server()
 {
-    if (_listen_fd != -1) close(_listen_fd);
+    // Close all client connections
+    for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+    {
+        close(it->first);
+    }
+    _clients.clear();
+    
+    // Close listening socket
+    if (_listen_fd != -1)
+    {
+        close(_listen_fd);
+        _listen_fd = -1;
+    }
+    
+    // Clear channels
+    _channels.clear();
 }
 
 void Server::setupListener(int port)
@@ -92,7 +117,10 @@ void Server::setupListener(int port)
 
 void Server::run()
 {
-    while (true)
+    _running = true;
+    volatile sig_atomic_t* shutdown = getShutdownFlag();
+    
+    while (_running && !(*shutdown))
     {
         int timeout = 1000; // ms, puedes ajustar
 		// poll espera actividad en uno o varios fds
@@ -103,7 +131,11 @@ void Server::run()
         {
 			// cuando poll falla, pone el numero de error en la variable global "errno"
 			// EINTR es una variable que indica que poll se interrumpió por una señal, en este caso no necesariamente queremos se rompa el bucle,
-            if (errno == EINTR) continue;
+            if (errno == EINTR)
+            {
+                if (*shutdown) break;
+                continue;
+            }
             std::cerr << "poll() failed: " << strerror(errno) << std::endl;
             break;
         }
@@ -136,6 +168,8 @@ void Server::run()
             }
         }
     }
+    
+    std::cout << "\nBye...\n";
 }
 
 void Server::sendWelcomeMessage(int client_fd)
@@ -145,7 +179,7 @@ void Server::sendWelcomeMessage(int client_fd)
         ":server NOTICE * :To register, use the following commands:\r\n"
         ":server NOTICE * :PASS <password>\r\n"
         ":server NOTICE * :NICK <nickname>\r\n"
-        ":server NOTICE * :USER <username>\r\n"
+        ":server NOTICE * :USER <username> <hostname> <servername> <realname>\r\n"
         ":server NOTICE * :After that, you can use HELP to see all the commands\r\n";
 
     send(client_fd, welcome.c_str(), welcome.size(), 0);
@@ -281,7 +315,7 @@ void helpCommand(Client &client)
 {
 	std::string help =
 	":server NOTICE * :PASS - set the password\r\n"
-	":server NOTICE * :USER - set the user\r\n"
+	":server NOTICE * :USER <username> <hostname> <servername> <realname>- set the user\r\n"
 	":server NOTICE * :NICK - set the nickname\r\n"
 	":server NOTICE * :QUIT - stop execution\r\n"
 	":server NOTICE * :PRIVMSG <target nickname> <message> — Send a private message to a user\r\n"
@@ -597,4 +631,9 @@ void Server::closeClient(int index)
     _pfds.erase(_pfds.begin() + index);
     
     std::cout << "Client fd=" << fd << " disconnected\n";
+}
+
+void Server::stop()
+{
+    _running = false;
 }

@@ -129,7 +129,7 @@ bool Channel::getInviteOnly()
 	return _inviteOnly;
 }
 
-bool Channel::isInWhiteList(int client_fd)
+/*bool Channel::isInWhiteList(int client_fd)
 {
 	for (size_t i; i < _whiteList.size(); i++)
 	{
@@ -137,4 +137,4 @@ bool Channel::isInWhiteList(int client_fd)
 			return true;
 	}
 	return false;
-}
+}*/
