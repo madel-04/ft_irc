@@ -1,0 +1,19 @@
+=== IRC tester log - 2025-10-17T11:28:27Z ===
+2025-10-17T11:28:27Z [RECV-A] :server NOTICE * :Welcome to ft_irc!
+2025-10-17T11:28:27Z [RECV-B] :server NOTICE * :Welcome to ft_irc!
+2025-10-17T11:28:27Z [RECV-A] :server NOTICE * :To register, use the following commands:
+2025-10-17T11:28:27Z [RECV-B] :server NOTICE * :To register, use the following commands:
+2025-10-17T11:28:27Z [RECV-A] :server NOTICE * :PASS <password>
+2025-10-17T11:28:27Z [RECV-B] :server NOTICE * :PASS <password>
+2025-10-17T11:28:27Z [RECV-A] :server NOTICE * :NICK <nickname>
+2025-10-17T11:28:27Z [RECV-B] :server NOTICE * :NICK <nickname>
+2025-10-17T11:28:27Z [RECV-A] :server NOTICE * :USER <username>
+2025-10-17T11:28:27Z [RECV-B] :server NOTICE * :USER <username>
+2025-10-17T11:28:27Z [RECV-A] :server NOTICE * :After that, you can use HELP to see all the commands
+2025-10-17T11:28:27Z [RECV-B] :server NOTICE * :After that, you can use HELP to see all the commands
+2025-10-17T11:28:27Z [SEND-A] NICK alice
+2025-10-17T11:28:27Z [RECV-A] :server NOTICE * :Nickname set to alice
+2025-10-17T11:28:27Z [SEND-A] USER alice
+2025-10-17T11:28:28Z [SEND-B] NICK ghost42
+2025-10-17T11:28:28Z [RECV-B] :server NOTICE * :Nickname set to ghost42
+2025-10-17T11:28:28Z [SEND-B] USER ghost
