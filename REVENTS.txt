@@ -1,0 +1,8 @@
+Flag		Significado							Cuándo ocurre
+POLLIN		Hay datos listos para leer			Cliente envió datos, socket aceptable para read()
+POLLOUT		Puedes escribir sin bloquear		Socket listo para enviar datos
+POLLERR		Error en el descriptor				Error en la conexión o socket
+POLLHUP		El otro extremo cerró la conexión	Cliente desconectado
+POLLNVAL	Descriptor inválido					FD cerrado o no abierto correctamente
+
+revents = 0 : no ocurrio ningun evento

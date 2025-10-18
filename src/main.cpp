@@ -3,10 +3,20 @@
 # include <string>
 # include <algorithm>
 # include <cctype>
+# include <csignal>
 
 #include "Server.hpp"
 
-int main(int argc, char* argv[]) {
+void signalHandler(int signum)
+{
+	std::cout << "Bye!\n";
+    std::exit(signum);
+}
+
+int main(int argc, char* argv[]) 
+{
+	std::signal(SIGINT, signalHandler);   // Ctrl+C
+
     if (argc != 3)
     {
         std::cerr << "Usage: " << argv[0] << "  ./ircserv <port> <password>\n";

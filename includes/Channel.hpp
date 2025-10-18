@@ -5,12 +5,25 @@
 #include <vector>
 #include <map>
 
+struct Member
+{
+    int fd;
+    bool isOperator;
+	std::string nick;
+};
+
 class Channel
 {
     private:
         std::string _name;
+		int _userLimit;
         std::string _topic;
-        std::vector<int> _members; // member file descriptors
+		bool _inviteOnly;
+		std::string _key;
+		bool _topicProtect;
+        std::vector<struct Member> _members; // member file descriptors
+		std::vector<int> _whiteList;
+
 
     public:
         Channel();
@@ -18,11 +31,24 @@ class Channel
 
         const std::string &getName() const;
         const std::string &getTopic() const;
-    const std::vector<int> &getMembers() const;
+    	const std::vector<struct Member> &getMembers() const;
 
-    void addMember(int client_fd);
-    void removeMember(int client_fd);
+		int	getCurrentUsers();
+		int getUserLimit();
+		int getFdByNick(std::string nick);
+		bool getInviteOnly();
+		std::string getKey();
+		bool isInWhiteList(int client_fd);
+		
+
+    void addMember(int client_fd, std::string nick, bool op);
+    void removeMember(int target_fd, int requester_fd);
     bool hasMember(int client_fd) const;
+	bool hasMemberNick(std::string name);
+	bool isOperator(int client_fd);
+	void addToWhiteList(int target_fd);
+	void setKey(std::string key);
+
 
     void broadcast(const std::string &message, int sender_fd = -1);
 };
