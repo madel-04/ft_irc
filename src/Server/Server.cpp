@@ -585,9 +585,10 @@ void Server::handleCommand(Client &client, const std::string &line)
 
     if (command == "QUIT")
     {
-        send(client_fd, "221 :Goodbye\r\n", 14, 0);
-        close(client_fd);
-        return;
+		send(client_fd, "221 :Goodbye\r\n", 14, 0);
+		// Ensure we properly remove from poll list and clients map
+		disconnectClientFd(client_fd);
+		return;
     }
     if (command == "HELP")
     {
@@ -637,3 +638,28 @@ void Server::stop()
 {
     _running = false;
 }
+
+// Remove a client given its fd: close socket, erase from pollfds and clients map
+void Server::disconnectClientFd(int fd)
+{
+	// Find the pollfd index for this fd
+	for (size_t i = 0; i < _pfds.size(); ++i)
+	{
+		if (_pfds[i].fd == fd)
+		{
+			closeClient(static_cast<int>(i));
+			return;
+		}
+	}
+	// If not in poll list (edge case), just close and erase
+	close(fd);
+	_clients.erase(fd);
+}
+/*
+Antes solo se hacia el close client.
+Ahora cierra el socket, elimina el cliente del mapa y quita el pollfd del vector
+Antes se quedaban ek pollfd del cliente como zombie y la entrada dek cliente seguia en _clients
+Lo que pasaba es que tenias entradas duplicadas y estado obsoleto al volver a intentar reconectar
+
+! SE ELIMINAN TAMBIÉN AL USUARIO DE TODOS LOS CANALES??
+*/

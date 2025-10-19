@@ -48,6 +48,8 @@ private:
 	bool handleKick(Client &client, std::istringstream &iss);
 	bool handleInvite(Client &client, std::istringstream &iss);
 	void handlePriv(Client &client, std::istringstream &iss);
+	// Gracefully disconnect a client by file descriptor (remove from poll and maps)
+	void disconnectClientFd(int fd);
 
 
 	bool channelExist(std::string channelName, Client &client);
