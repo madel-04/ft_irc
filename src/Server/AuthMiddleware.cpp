@@ -79,9 +79,15 @@ bool Server::authMiddleware(Client &client, const std::string &command, std::ist
 			send(client_fd, msg.c_str(), msg.size(), 0);
 			return false;
 		}
+		
+		// Store old nick if user is already authenticated (for channel notifications)
+		std::string oldNick = client.getNick();
+		bool wasAuthenticated = client.isAuthenticated();
+		
 		client.setNick(nick);
 		msg = ":server NOTICE * :Nickname set to " + nick + "\r\n";
 		send(client_fd, msg.c_str(), msg.size(), 0);
+		
 		if (!client.isAuthenticated() && client.hasPass() && client.hasNick() && client.hasUser())
 		{
 			client.setAuthenticated(true);
@@ -90,6 +96,13 @@ bool Server::authMiddleware(Client &client, const std::string &command, std::ist
 			send(client_fd, welcome.c_str(), welcome.size(), 0);
 			std::cout << "Client " << client_fd << " is now authenticated as "
 					  << client.getNick() << "\n";
+		}
+		else if (wasAuthenticated && !oldNick.empty())
+		{
+			// User was already authenticated and changed nick - notify all channels
+			notifyNickChange(client_fd, oldNick, nick, client.getUser());
+			std::cout << "Client " << client_fd << " changed nick from " << oldNick 
+					  << " to " << nick << "\n";
 		}
 		return false;
 	}

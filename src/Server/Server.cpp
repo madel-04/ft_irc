@@ -625,6 +625,32 @@ void Server::handleCommand(Client &client, const std::string &line)
 void Server::closeClient(int index)
 {
     int fd = _pfds[index].fd;
+	// If we still have the client object, use its nick to broadcast part messages
+	std::string nick;
+	std::string user;
+	std::map<int, Client>::iterator itc = _clients.find(fd);
+	if (itc != _clients.end())
+	{
+		nick = itc->second.getNick();
+		user = itc->second.getUser();
+	}
+
+	// Remove from all channels and notify
+	for (std::map<std::string, Channel>::iterator it = _channels.begin(); it != _channels.end(); ++it)
+	{
+		Channel &ch = it->second;
+		if (ch.hasMember(fd))
+		{
+			std::string partMsg;
+			if (!nick.empty())
+				partMsg = ":" + nick + "!" + user + "@localhost PART " + ch.getName() + "\r\n";
+			else
+				partMsg = ":server NOTICE * :Client left channel " + ch.getName() + "\r\n";
+			ch.broadcast(partMsg, fd);
+			ch.removeMemberByFd(fd);
+		}
+	}
+
     close(fd);
     _clients.erase(fd);
 
@@ -655,6 +681,7 @@ void Server::disconnectClientFd(int fd)
 	close(fd);
 	_clients.erase(fd);
 }
+
 /*
 Antes solo se hacia el close client.
 Ahora cierra el socket, elimina el cliente del mapa y quita el pollfd del vector
@@ -663,3 +690,23 @@ Lo que pasaba es que tenias entradas duplicadas y estado obsoleto al volver a in
 
 ! SE ELIMINAN TAMBIÉN AL USUARIO DE TODOS LOS CANALES??
 */
+
+// Notify all channels where client is present about nick change
+void Server::notifyNickChange(int client_fd, const std::string &oldNick, const std::string &newNick, const std::string &username)
+{
+	// Standard IRC NICK change format: :oldnick!user@host NICK :newnick
+	std::string nickMsg = ":" + oldNick + "!" + username + "@localhost NICK :" + newNick + "\r\n";
+	
+	// Broadcast to all channels where this user is a member
+	for (std::map<std::string, Channel>::iterator it = _channels.begin(); it != _channels.end(); ++it)
+	{
+		Channel &ch = it->second;
+		if (ch.hasMember(client_fd))
+		{
+			// Broadcast to everyone in the channel (including the user who changed nick)
+			ch.broadcast(nickMsg, -1);
+			// Update the nickname in the channel's member list
+			ch.updateMemberNick(client_fd, newNick);
+		}
+	}
+}

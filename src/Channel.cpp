@@ -68,6 +68,39 @@ void Channel::removeMember(int target_fd, int requester_fd)
     }
 }
 
+void Channel::removeMemberByFd(int target_fd)
+{
+    for (size_t i = 0; i < _members.size(); ++i)
+    {
+        if (_members[i].fd == target_fd)
+        {
+            _members.erase(_members.begin() + i);
+            break;
+        }
+    }
+    // Also remove from whitelist if present
+    for (size_t i = 0; i < _whiteList.size(); ++i)
+    {
+        if (_whiteList[i] == target_fd)
+        {
+            _whiteList.erase(_whiteList.begin() + i);
+            break;
+        }
+    }
+}
+
+void Channel::updateMemberNick(int client_fd, const std::string &newNick)
+{
+    for (size_t i = 0; i < _members.size(); ++i)
+    {
+        if (_members[i].fd == client_fd)
+        {
+            _members[i].nick = newNick;
+            break;
+        }
+    }
+}
+
 void Channel::broadcast(const std::string &message, int sender_fd)
 {
     for (size_t i = 0; i < _members.size(); ++i)

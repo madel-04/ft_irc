@@ -50,7 +50,8 @@ private:
 	void handlePriv(Client &client, std::istringstream &iss);
 	// Gracefully disconnect a client by file descriptor (remove from poll and maps)
 	void disconnectClientFd(int fd);
-
+	// Notify all channels where client is present about nick change
+	void notifyNickChange(int client_fd, const std::string &oldNick, const std::string &newNick, const std::string &username);
 
 	bool channelExist(std::string channelName, Client &client);
 	bool clientExist(int target_fd, Client &client);

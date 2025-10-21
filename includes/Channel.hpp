@@ -48,7 +48,10 @@ class Channel
 	bool isOperator(int client_fd);
 	void addToWhiteList(int target_fd);
 	void setKey(std::string key);
-
+	// Remove a member from this channel by fd, without permission checks (used on disconnect)
+	void removeMemberByFd(int target_fd);
+	// Update a member's nickname in the channel
+	void updateMemberNick(int client_fd, const std::string &newNick);
 
     void broadcast(const std::string &message, int sender_fd = -1);
 };
